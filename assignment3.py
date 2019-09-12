@@ -31,7 +31,14 @@ def process_csv(localfile):
 
 
 def search_image(csvlist):
-    pass
+
+    counter = 0
+
+    for row in csvlist:
+        if re.search(r'jpg|JPG\.$', row[0]):
+            counter += 1
+
+    print(counter)
 
 
 def search_browse(csvlist):
