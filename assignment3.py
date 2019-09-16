@@ -1,41 +1,57 @@
+from csv import reader
+from datetime import datetime
+from urllib.request import urlopen
+from urllib.error import HTTPError, URLError
 import argparse
-import csv
 import re
-import urllib.request
 
 
 def download_csv(url):
-    """Function that takes in a url to a csv file and downloads it.
-    :param url: argument for the url that contains the csv file
-    :return html: the data from the csv file
     """
-    # retrieve csv file via url and store it in a temporary location
-    tempfile, headers = urllib.request.urlretrieve(url)
+    Function that takes in a url with a csv file, opens it, and returns the data back to caller as string
+    :param url: argument for the url that contains the csv file
+    :return html: the string data of the csv file
+    """
+    # retrieve csv file via url, read the data, decode data from byte to unicode
+    with urlopen(url) as response:
+        html = response.read().decode('utf-8')
 
-    # open the file, return contents to the caller
-    html = open(tempfile)
+    # return html to caller
     return html
 
 
-def process_csv(localfile):
-    """Function that will take in data from a csv file, store it in a list, and return it to the caller.
-    :param localfile: argument representing the csv data
-    :return csvlist: a list containing the data of a csv file
+def process_csv(csvfile):
     """
-    # list to store csv data
+    Function that will take in string data from a csv url, process it to a list, and return it to the caller.
+    :param csvfile: argument representing the string csv data
+    :return csvlist: a list containing the processed data of csvfile
+    """
+    # empty list to store csv data
     csvlist = []
-    
-    # initialize csv reader and pass in the temp file opened 
-    csvreader = csv.reader(localfile, delimiter=',')
 
-    # loop through the reader and add each row to the csv list before returning it to caller
+    # initialize csv reader and pass string data, splitting it by lines
+    csvreader = reader(csvfile.splitlines())
+
+    # create loop to iterate through the csvreader
     for row in csvreader:
-        csvlist.append(row)
+
+        # create indexes for each column, converting accessinfo  to datetime
+        filepathinfo = row[0]
+        accessinfo = datetime.strptime(row[1], '%Y-%m-%d %H:%M:%S')
+        browserinfo = row[2]
+        statusinfo = row[3]
+        sizeinfo = row[4]
+
+        # append each column as a list to csvlist
+        csvlist.append([filepathinfo, accessinfo, browserinfo, statusinfo, sizeinfo])
+
+    # return list to caller
     return csvlist
 
 
 def search_image(csvlist):
-    """Function that takes in a list and checks for website hits that are for pictures.
+    """
+    Function that takes in a list and checks for website hits that are for pictures.
     :param csvlist: argument that contains data from csv file in the form of a list
     :return tuple: the total hits, hits for images, and percentage of hit that are images
     """
@@ -50,35 +66,138 @@ def search_image(csvlist):
             counter += 1
 
     # calculate the percentage of hits that are gif, jpg, or png files
-    percentage = (counter/(len(csvlist)))*100
+    percentage = (counter / (len(csvlist))) * 100
 
     # return to caller percentage
     return len(csvlist), counter, percentage
 
 
 def search_browser(csvlist):
-    pass
+    """
+    Function that checks User Agent for browser type.
+    :param csvlist: argument that contains data from csv file in the form of a list
+    :return:
+    """
+    # variables that will store how many of each were used for the hits
+    chrome = 0
+    firefox = 0
+    explorer = 0
+    safari = 0
+
+    # loop that will iterate through the csv list
+    for row in csvlist:
+        # if statements to check what browser was used and increment it's counter
+        if re.search(r'Chrome', row[2]):
+            # increment counter on each hit
+            chrome += 1
+        elif re.search(r'Firefox', row[2]):
+            # increment counter on each hit
+            firefox += 1
+        elif re.search(r'MSIE', row[2]):
+            # increment counter on each hit
+            explorer += 1
+        else:
+            safari += 1
+
+    # return the count for each browser used
+    return chrome, firefox, explorer, safari
+
 
 def search_time_of_hits(csvlist):
-    pass
+    """
+    Function that returns list hits to a website based on hour of the hit.
+    :param csvlist: argument that contains data from csv file in the form of a list
+    :return: hourlist: list that contains the number of hits with list index being the hour
+    """
+
+    # empty list to store hits count by the hour, hour will be the index
+    hourlist = []
+
+    # counter that will determine if while loop should run
+    counter = 0
+
+    # while loop that will run and check each hour ending with hour 23
+    while counter <= 23:
+        # the variable that will store the number of hits per hour
+        sum = 0
+
+        # loop through the csvlist
+        for row in csvlist:
+            # for each row, check the datetime object hour value
+            if row[1].hour == counter:
+                # increment sum if we have a hit on the hour
+                sum +=1
+
+        # append sum for the hour to list and increment counter for the next hour
+        hourlist.append(sum)
+        counter += 1
+
+    # return list of hours
+    return(hourlist)
+
 
 def main():
     """Function that is called when script executes """
 
-    # url to test the application
-    url = 'http://s3.amazonaws.com/cuny-is211-spring2015/weblog.csv'
+    # initialize argument parser, add arguments, and then parse into script
+    parser = argparse.ArgumentParser(description='Script that downloads csv data from URL')
+    parser.add_argument('url', type=str, help='Url that contains a csv file.')
+    args = parser.parse_args()
 
-    # call function to download csv data
-    csv_file = download_csv(url)
+    # call download csv function and pass in the url arg, print message to screen if there is an issue and exit
+    try:
+        csv_file = download_csv(args.url)
+    except HTTPError as e:
+        print('The server couldn\'t fulfill the request. Please check your url!')
+        print('Error code: ', e.code)
+    except URLError as e:
+        print('We are unable to reach the server. Please check your url!')
+        print('Reason: ', e.reason)
+    else:
+        # try to pass the data to process_csv function, print message to screen and exit if issue
+        try:
+            csv_list = process_csv(csv_file)
+        except:
+            print('The application is unable to finish because the data from the url can\'t be processed.\n'
+                  'Please check that the url contains a csv file with the proper setup.')
+            exit()
+        else:
 
-    # call function to process the csv data
-    csv_list = process_csv(csv_file)
+            # call function to search for images
+            image_stats = search_image(csv_list)
 
-    # call function to search for images
-    image_stats = search_image(csv_list)
+            print('File Request Stats:\n------------------\nOut of a total of {} requests, {} were image requests.\n'
+                  'This accounts for {}% of all requests.\n'.format(image_stats[0],image_stats[1],image_stats[2]))
 
-    print(f'Out of {image_stats[0]} requests, {image_stats[1]} were image requests.\n'
-          f'This accounts for {image_stats[2]}% of all requests')
+            # call function to search for browsers
+            browser_stats = search_browser(csv_list)
+
+            if browser_stats[0] == max(browser_stats):
+                maxbrowser = 'Chrome'
+                browsercount = browser_stats[0]
+            elif browser_stats[1] == max(browser_stats):
+                maxbrowser = 'Firefox'
+                browsercount = browser_stats[1]
+            elif browser_stats[2] == max(browser_stats):
+                maxbrowser = 'Internet Explorer'
+                browsercount = browser_stats[2]
+            else:
+                maxbrowser = 'Safari'
+                browsercount = browser_stats[3]
+
+            print('Browser Stats:\n------------------\n{} was the most popular browser with {} users using it.'.format(maxbrowser, browsercount))
+
+            # call function to check the hits per hour
+            timelist = search_time_of_hits(csv_list)
+
+            listcounter = 0
+
+            print('\nHourly Hit Stats:')
+            print('------------------')
+
+            for item in timelist:
+                print('During hour {}, there were {} hits.'.format(listcounter, item))
+                listcounter += 1
 
 
 if __name__ == '__main__':
