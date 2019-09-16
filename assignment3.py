@@ -88,13 +88,10 @@ def search_browser(csvlist):
     for row in csvlist:
         # if statements to check what browser was used and increment it's counter
         if re.search(r'Chrome', row[2]):
-            # increment counter on each hit
             chrome += 1
         elif re.search(r'Firefox', row[2]):
-            # increment counter on each hit
             firefox += 1
         elif re.search(r'MSIE', row[2]):
-            # increment counter on each hit
             explorer += 1
         else:
             safari += 1
@@ -105,7 +102,7 @@ def search_browser(csvlist):
 
 def search_time_of_hits(csvlist):
     """
-    Function that returns list hits to a website based on hour of the hit.
+    Function that returns list of hits to a website based on hour of the hit.
     :param csvlist: argument that contains data from csv file in the form of a list
     :return: hourlist: list that contains the number of hits with list index being the hour
     """
@@ -118,6 +115,7 @@ def search_time_of_hits(csvlist):
 
     # while loop that will run and check each hour ending with hour 23
     while counter <= 23:
+
         # the variable that will store the number of hits per hour
         sum = 0
 
@@ -144,7 +142,7 @@ def main():
     parser.add_argument('url', type=str, help='Url that contains a csv file.')
     args = parser.parse_args()
 
-    # call download csv function and pass in the url arg, print message to screen if there is an issue and exit
+    # call download_csv function and pass in the url arg, print message to screen if there is an issue and exit
     try:
         csv_file = download_csv(args.url)
     except HTTPError as e:
@@ -172,6 +170,7 @@ def main():
             # call function to search for browsers
             browser_stats = search_browser(csv_list)
 
+            # set a maxbrowser variable to the browser that has the most usage
             if browser_stats[0] == max(browser_stats):
                 maxbrowser = 'Chrome'
                 browsercount = browser_stats[0]
@@ -190,11 +189,13 @@ def main():
             # call function to check the hits per hour
             timelist = search_time_of_hits(csv_list)
 
+            # create counter to represent index of list
             listcounter = 0
 
             print('\nHourly Hit Stats:')
             print('------------------')
 
+            # loop through timelist, and print out message based on the listcounter and item for it
             for item in timelist:
                 print('During hour {}, there were {} hits.'.format(listcounter, item))
                 listcounter += 1
@@ -202,4 +203,5 @@ def main():
 
 if __name__ == '__main__':
 
+    # call main function to run program
     main()
