@@ -1,7 +1,7 @@
 # IS211_Assignments3
 Week 3 Assignment 3
 
-Author: Moses Permaul, moses.permaul13@spsmail.cuny.edu
+Author: Moses Permaul - moses.permaul13@spsmail.cuny.edu
 
 Application Details:
 
@@ -19,4 +19,14 @@ Application Details:
 
 3) The application will try to open a url, read the csv data to memory, process the csv data, and then display some stats.
 
+4) A message will be displayed in the console if there are issues with the url.
+	
+	ex: 
+		The url is invalid --> passed in https://s3.amazonaws.co
+			Message displayed:
+				"We are unable to reach the server. Please check your url!"
+
+5) A message will be displayed in the console if the url is valid and there is nothing to process.
+
+6) A message will be displayed in the console if the url is valid, but the csv data can't be process.
 
