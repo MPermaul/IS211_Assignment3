@@ -87,13 +87,13 @@ def search_browser(csvlist):
     # loop that will iterate through the csv list
     for row in csvlist:
         # if statements to check what browser was used and increment it's counter
-        if re.search(r'Chrome', row[2]):
+        if re.search(r'Chrome/[\d]{2}\.[\d.]\.[\d]{4}?\.[\d]', row[2]):
             chrome += 1
-        elif re.search(r'Firefox', row[2]):
+        elif re.search(r'Firefox/[\d]{2}?\.[\d]', row[2]):
             firefox += 1
-        elif re.search(r'MSIE', row[2]):
+        elif re.search(r'MSIE [\d][\d]?\.[\d];', row[2]):
             explorer += 1
-        else:
+        elif re.search(r'\) Version/[\d]\.[\d]\.[\d] Safari/[a-zA-z0-9]{9}', row[2]):
             safari += 1
 
     # return the count for each browser used
